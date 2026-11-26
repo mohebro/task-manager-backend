@@ -17,14 +17,21 @@ docker compose up --build
 
 ## Migrations
 
-Migrations are always given as an UP/DOWN pair. Apply them with `psql`:
+Migrations are always given as an UP/DOWN pair. `docker compose up`
+applies them automatically with the `migrate` service: it waits for
+the db to be healthy, then runs `up`.
 
 ```bash
-# start Postgres first
-docker compose up -d db
-# up
-psql "$DATABASE_URL" -f migrations/001_create_users.up.sql
-# down (drops the users table, restores the previous schema)
+docker compose up -d
+docker compose logs migrate --tail 20
+# check the table
+docker compose exec db psql -U taskmanager -d taskmanager -c "\d users"
+```
+
+To roll back manually with `psql` (drops the users table, restores
+the previous schema):
+
+```bash
 psql "$DATABASE_URL" -f migrations/001_create_users.down.sql
 ```
 

@@ -1,6 +1,6 @@
 # Task Manager backend.
-# PR 1 is scaffold only: just the app with /health.
-# Postgres is added with the users migration in PR 2.
+# PR 2 adds Postgres + a migrate service so the users migration is applied on up.
+# The app itself still only serves /health; auth comes in PR 3.
 services:
   app:
     build: .
@@ -8,4 +8,39 @@ services:
       HTTP_PORT: "8080"
     ports:
       - "${HTTP_PORT:-8080}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
+
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-taskmanager}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-taskmanager}"
+      POSTGRES_DB: "${POSTGRES_DB:-taskmanager}"
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taskmanager}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    image: migrate/migrate
+    volumes:
+      - ./migrations:/migrations:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://${POSTGRES_USER:-taskmanager}:${POSTGRES_PASSWORD:-taskmanager}@db:5432/${POSTGRES_DB:-taskmanager}?sslmode=disable"
+      - "up"
+
+volumes:
+  postgres_data:

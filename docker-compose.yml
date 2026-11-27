@@ -1,5 +1,5 @@
 # Task Manager backend.
-# PR 3 adds auth: register/login/me with JWT.
+# PR 5 adds structured logging and handler/middleware/config tests.
 services:
   app:
     build: .
@@ -9,6 +9,8 @@ services:
       DATABASE_URL: "postgres://${POSTGRES_USER:-taskmanager}:${POSTGRES_PASSWORD:-taskmanager}@db:5432/${POSTGRES_DB:-taskmanager}?sslmode=disable"
       JWT_SECRET: "${JWT_SECRET:-dev-only-change-me-in-prod}"
       JWT_TTL_HOURS: "${JWT_TTL_HOURS:-24}"
+      APP_ENV: "${APP_ENV:-dev}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
     ports:
       - "${HTTP_PORT:-8080}:8080"
     depends_on:

@@ -6,6 +6,7 @@ PR 1 is scaffold only: the server starts and answers `/health`.
 PR 2 adds the users migration and the User model.
 PR 3 adds auth: register, login and me with JWT.
 PR 4 adds Swagger docs for the auth endpoints.
+PR 5 adds structured logging and handler/middleware/config tests.
 Tasks, projects and comments come after that, one step at a time.
 
 ## Run locally
@@ -95,6 +96,27 @@ variables: `@host localhost:8080` is baked into `docs/` when you run
 `swag init`. The runtime override is `SWAGGER_HOST` — when set, `main`
 writes it into `docs.SwaggerInfo.Host` before the server starts, so the
 UI calls the right host on a server. Leave it empty locally.
+
+## Logging
+
+Logs are one JSON line per request, to stdout:
+
+```json
+{"time":"...","level":"INFO","msg":"http request","request_id":"...","method":"POST","path":"/auth/login","status":200,"duration_ms":12}
+```
+
+Every request gets an id (`X-Request-ID` response header) so a client
+report can be matched to a log line. A 500 is always logged server-side
+with the full error and the request id; the client sees the exact error
+only when `APP_ENV=dev`, otherwise a generic message plus the request
+id. Passwords and tokens are never logged. `LOG_LEVEL` is `debug`,
+`info` (default), `warn` or `error`.
+
+Watch the logs while testing:
+
+```bash
+docker compose logs -f app
+```
 
 ## Endpoints
 

@@ -20,6 +20,13 @@ type Config struct {
 	// (localhost:8080). Set it on a server so the UI calls the
 	// right host, e.g. SWAGGER_HOST=api.example.com:8080.
 	SwaggerHost string
+	// AppEnv is "dev" or "production". Only in dev does the server
+	// return the exact internal error to the client; in production
+	// the client gets a generic message and the detail stays in the
+	// log. Empty means "production" — safe by default.
+	AppEnv string
+	// LogLevel is one of debug, info, warn, error. Default "info".
+	LogLevel string
 }
 
 func Load() (*Config, error) {
@@ -29,6 +36,19 @@ func Load() (*Config, error) {
 		JWTSecret:   os.Getenv("JWT_SECRET"),
 		JWTTTL:      24 * time.Hour,
 		SwaggerHost: os.Getenv("SWAGGER_HOST"),
+		AppEnv:      os.Getenv("APP_ENV"),
+		LogLevel:    os.Getenv("LOG_LEVEL"),
+	}
+	if cfg.AppEnv == "" {
+		cfg.AppEnv = "production"
+	}
+	if cfg.LogLevel == "" {
+		cfg.LogLevel = "info"
+	}
+	switch cfg.LogLevel {
+	case "debug", "info", "warn", "error":
+	default:
+		return nil, errors.New("LOG_LEVEL must be debug, info, warn or error")
 	}
 	if cfg.DatabaseURL == "" {
 		return nil, errors.New("DATABASE_URL is required")

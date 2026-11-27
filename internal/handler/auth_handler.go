@@ -13,6 +13,11 @@ import (
 	"github.com/mohebro/task-manager-backend/internal/service"
 )
 
+// ErrorResponse is the shape of every error body: {"error": "..."}.
+type ErrorResponse struct {
+	Error string `json:"error" example:"invalid email or password"`
+}
+
 type authService interface {
 	Register(ctx context.Context, input model.RegisterInput) (*model.User, string, error)
 	Login(ctx context.Context, input model.LoginInput) (*model.User, string, error)
@@ -36,6 +41,17 @@ func (h *AuthHandler) ParseToken(tokenString string) (uuid.UUID, error) {
 
 // Register creates a user and returns them with a JWT.
 // 201 on success, 400 on invalid input, 409 when the email is taken.
+//
+// @Summary Register a new user
+// @Description Creates a user with a bcrypt-hashed password and returns a JWT.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body model.RegisterInput true "Registration details"
+// @Success 201 {object} model.AuthResponse
+// @Failure 400 {object} handler.ErrorResponse
+// @Failure 409 {object} handler.ErrorResponse
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var input model.RegisterInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -52,6 +68,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 // Login returns a JWT for a registered user.
 // 401 on wrong email or password, without saying which one.
+//
+// @Summary Log in
+// @Description Returns a JWT for a registered user. Wrong email or password both give 401.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body model.LoginInput true "Login details"
+// @Success 200 {object} model.AuthResponse
+// @Failure 400 {object} handler.ErrorResponse
+// @Failure 401 {object} handler.ErrorResponse
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var input model.LoginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -67,6 +94,15 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 // Me returns the user behind the Bearer token on this request.
+//
+// @Summary Get the current user
+// @Description Returns the user behind the Bearer token.
+// @Tags auth
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} model.PublicUser
+// @Failure 401 {object} handler.ErrorResponse
+// @Router /auth/me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
 	userID, ok := UserIDFromContext(c)
 	if !ok {

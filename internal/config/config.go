@@ -15,6 +15,11 @@ type Config struct {
 	HTTPPort    string
 	JWTSecret   string
 	JWTTTL      time.Duration
+	// SwaggerHost overrides the host shown in the Swagger UI.
+	// Empty means: use the host baked into docs/ by `swag init`
+	// (localhost:8080). Set it on a server so the UI calls the
+	// right host, e.g. SWAGGER_HOST=api.example.com:8080.
+	SwaggerHost string
 }
 
 func Load() (*Config, error) {
@@ -23,6 +28,7 @@ func Load() (*Config, error) {
 		HTTPPort:    os.Getenv("HTTP_PORT"),
 		JWTSecret:   os.Getenv("JWT_SECRET"),
 		JWTTTL:      24 * time.Hour,
+		SwaggerHost: os.Getenv("SWAGGER_HOST"),
 	}
 	if cfg.DatabaseURL == "" {
 		return nil, errors.New("DATABASE_URL is required")

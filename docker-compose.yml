@@ -1,11 +1,14 @@
 # Task Manager backend.
-# PR 2 adds Postgres + a migrate service so the users migration is applied on up.
-# The app itself still only serves /health; auth comes in PR 3.
+# PR 3 adds auth: register/login/me with JWT.
 services:
   app:
     build: .
     environment:
       HTTP_PORT: "8080"
+      # Inside the container the db host is `db`, not localhost (leeba lesson).
+      DATABASE_URL: "postgres://${POSTGRES_USER:-taskmanager}:${POSTGRES_PASSWORD:-taskmanager}@db:5432/${POSTGRES_DB:-taskmanager}?sslmode=disable"
+      JWT_SECRET: "${JWT_SECRET:-dev-only-change-me-in-prod}"
+      JWT_TTL_HOURS: "${JWT_TTL_HOURS:-24}"
     ports:
       - "${HTTP_PORT:-8080}:8080"
     depends_on:

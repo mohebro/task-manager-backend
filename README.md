@@ -75,6 +75,18 @@ go install github.com/swaggo/swag/cmd/swag@v1.16.4
 swag init -g cmd/server/main.go
 ```
 
+Trying the secured endpoint (`GET /auth/me`): it takes no body or
+query input — the user id comes from the token, so it correctly shows
+no parameters. The token goes in through the **Authorize** button at
+the top of the page, not through the endpoint itself:
+
+1. Try `POST /auth/register` (or `/auth/login`) and copy the token.
+2. Click **Authorize** at the top, enter `Bearer <token>` — the word
+   `Bearer`, a space, then the token. Just the token alone gives 401,
+   because this auth type sends the value verbatim, without adding
+   `Bearer` for you.
+3. Try `GET /auth/me` — it sends `Authorization: Bearer <token>`.
+
 The `swag` CLI and the `swag` library must be the same version (v1.16.4):
 a newer CLI generates `docs.go` the older library cannot compile.
 

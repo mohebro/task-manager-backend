@@ -28,7 +28,7 @@ import (
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-// @description Type "Bearer" followed by a space and the JWT.
+// @description How to use it: 1) call POST /auth/register or /auth/login and copy the token. 2) Click the Authorize button at the top of this page. 3) Enter: Bearer <your-token> — the word Bearer, a space, then the token. Just the token alone does NOT work, the server answers 401. 4) Try GET /auth/me.
 func main() {
 	cfg, err := config.Load()
 	if err != nil {

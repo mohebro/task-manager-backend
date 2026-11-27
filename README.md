@@ -78,6 +78,12 @@ swag init -g cmd/server/main.go
 The `swag` CLI and the `swag` library must be the same version (v1.16.4):
 a newer CLI generates `docs.go` the older library cannot compile.
 
+Annotations are read at generation time, so they cannot use `.env`
+variables: `@host localhost:8080` is baked into `docs/` when you run
+`swag init`. The runtime override is `SWAGGER_HOST` — when set, `main`
+writes it into `docs.SwaggerInfo.Host` before the server starts, so the
+UI calls the right host on a server. Leave it empty locally.
+
 ## Endpoints
 
 - `GET /health` — `{"status":"ok"}`

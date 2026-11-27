@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -35,6 +37,20 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
+	// Structured JSON logs to stdout. Level comes from LOG_LEVEL.
+	var level slog.Level
+	switch cfg.LogLevel {
+	case "debug":
+		level = slog.LevelDebug
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+
 	// Annotations are read at generation time (`swag init`), so they
 	// cannot see .env. The generated docs package exposes SwaggerInfo,
 	// and this override is the runtime bridge: SWAGGER_HOST wins over
@@ -47,20 +63,23 @@ func main() {
 	defer cancel()
 	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("db: %v", err)
+		logger.Error("db connect failed", "error", err.Error())
+		os.Exit(1)
 	}
 	defer pool.Close()
 	if err := pool.Ping(ctx); err != nil {
-		log.Fatalf("db ping: %v", err)
+		logger.Error("db ping failed", "error", err.Error())
+		os.Exit(1)
 	}
 
 	users := repository.NewPostgresUserRepository(pool)
 	authService := service.NewAuthService(users, cfg.JWTSecret, cfg.JWTTTL)
-	authHandler := handler.NewAuthHandler(authService, users)
+	authHandler := handler.NewAuthHandler(authService, users, logger, cfg.AppEnv == "dev")
 
-	engine := router.New(authHandler)
-	log.Printf("listening on :%s", cfg.HTTPPort)
+	engine := router.New(authHandler, logger)
+	logger.Info("listening", "port", cfg.HTTPPort, "env", cfg.AppEnv)
 	if err := engine.Run(":" + cfg.HTTPPort); err != nil {
-		log.Fatalf("server: %v", err)
+		logger.Error("server failed", "error", err.Error())
+		os.Exit(1)
 	}
 }

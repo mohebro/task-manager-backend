@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,10 +28,15 @@ type authService interface {
 type AuthHandler struct {
 	service authService
 	users   repository.UserRepository
+	logger  *slog.Logger
+	// dev is true only when APP_ENV=dev. It decides whether a 500
+	// returns the exact error to the client. Never log or return
+	// passwords or tokens; the error here never contains them.
+	dev bool
 }
 
-func NewAuthHandler(service authService, users repository.UserRepository) *AuthHandler {
-	return &AuthHandler{service: service, users: users}
+func NewAuthHandler(service authService, users repository.UserRepository, logger *slog.Logger, dev bool) *AuthHandler {
+	return &AuthHandler{service: service, users: users, logger: logger, dev: dev}
 }
 
 // ParseToken delegates to the auth service, so the router can
@@ -130,6 +136,21 @@ func (h *AuthHandler) writeError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrInvalidCredentials):
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		// The exact error is always logged server-side with the
+		// request id, so a later failure can be traced. The client
+		// only sees the detail in dev; in production it gets a
+		// generic message and the request id to report.
+		requestID, _ := RequestIDFromContext(c)
+		h.logger.Error("internal error",
+			"request_id", requestID,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"error", err.Error(),
+		)
+		if h.dev {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "request_id": requestID})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error", "request_id": requestID})
 	}
 }

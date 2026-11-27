@@ -5,6 +5,7 @@ Team task manager for your team. Go, Gin, PostgreSQL, Docker.
 PR 1 is scaffold only: the server starts and answers `/health`.
 PR 2 adds the users migration and the User model.
 PR 3 adds auth: register, login and me with JWT.
+PR 4 adds Swagger docs for the auth endpoints.
 Tasks, projects and comments come after that, one step at a time.
 
 ## Run locally
@@ -59,6 +60,23 @@ curl http://localhost:8080/auth/me
 The server refuses to start without `JWT_SECRET`. In Docker Compose a
 dev-only default is set; set a real `JWT_SECRET` in `.env` for anything
 beyond local testing.
+
+## API docs (Swagger)
+
+After `docker compose up`, open http://localhost:8080/swagger/index.html —
+all three auth endpoints are there, and `/auth/me` can be tried with the
+Authorize button (type `Bearer <token>`).
+
+Docs are generated from the annotations on `main` and the auth handlers.
+After changing an annotation, regenerate — never edit `docs/` by hand:
+
+```bash
+go install github.com/swaggo/swag/cmd/swag@v1.16.4
+swag init -g cmd/server/main.go
+```
+
+The `swag` CLI and the `swag` library must be the same version (v1.16.4):
+a newer CLI generates `docs.go` the older library cannot compile.
 
 ## Endpoints
 
